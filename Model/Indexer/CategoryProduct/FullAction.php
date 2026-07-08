@@ -60,6 +60,7 @@ class FullAction extends CoreFull
         private readonly Visibility $productVisibility,
         private readonly SnapshotBuilder $snapshotBuilder,
         private readonly CoreBehavior $coreBehavior,
+        private readonly LoggerInterface $logger,
         ?QueryGenerator $queryGenerator = null,
         ?BatchSizeManagementInterface $batchSizeManagement = null,
         ?BatchProviderInterface $batchProvider = null,
@@ -68,7 +69,6 @@ class FullAction extends CoreFull
         ?ActiveTableSwitcher $activeTableSwitcher = null,
         ?ProcessManager $processManager = null,
         ?DeploymentConfig $deploymentConfig = null,
-        private readonly ?LoggerInterface $logger = null,
     ) {
         parent::__construct(
             $resource,
@@ -101,7 +101,7 @@ class FullAction extends CoreFull
             $this->snapshotReady = true;
         } catch (\Throwable $snapshotFailure) {
             $this->snapshotReady = false;
-            $this->logger?->error(
+            $this->logger->error(
                 '[SimpleMage] Snapshot build failed — full reindex falls back to the core EAV-JOIN path',
                 ['exception' => $snapshotFailure],
             );
