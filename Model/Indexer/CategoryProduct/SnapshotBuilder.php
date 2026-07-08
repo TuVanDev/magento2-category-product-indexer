@@ -270,6 +270,26 @@ class SnapshotBuilder
 
         try {
             $work();
+        } catch (\Throwable $workError) {
+            // A snapshot mutation that fails partway (a chunk INSERT deadlocks,
+            // times out, or a partial refresh dies between its DELETE and
+            // re-INSERT) leaves a table that still EXISTS but is incomplete.
+            // buildMissingTables() trusts existence as completeness, so a later
+            // partial reindex would read the half-built snapshot and silently
+            // drop rows from the index with no fallback. Drop every snapshot
+            // table so the next reindex rebuilds from scratch — the current run
+            // already falls back to the core EAV-join path. Runs inside the
+            // still-held build lock, so it cannot race a concurrent rebuild.
+            try {
+                $this->dropAll();
+            } catch (\Throwable $cleanupError) {
+                $this->logger->error(
+                    '[SimpleMage snapshot] failed to drop snapshot tables after a build error; '
+                    . 'a later partial reindex could read an incomplete snapshot — run a full reindex',
+                    ['exception' => $cleanupError],
+                );
+            }
+            throw $workError;
         } finally {
             try {
                 $connection->fetchOne('SELECT RELEASE_LOCK(?)', [self::BUILD_LOCK_NAME]);
