@@ -56,6 +56,7 @@ class RowsAction extends CoreRows
         private readonly Visibility $productVisibility,
         private readonly SnapshotBuilder $snapshotBuilder,
         private readonly CoreBehavior $coreBehavior,
+        private readonly LoggerInterface $logger,
         ?QueryGenerator $queryGenerator = null,
         ?MetadataPool $metadataPool = null,
         ?TableMaintainer $tableMaintainer = null,
@@ -63,7 +64,6 @@ class RowsAction extends CoreRows
         ?EventManagerInterface $eventManager = null,
         ?IndexerRegistry $indexerRegistry = null,
         ?WorkingStateProvider $workingStateProvider = null,
-        private readonly ?LoggerInterface $logger = null,
     ) {
         parent::__construct(
             $resource,
@@ -95,7 +95,7 @@ class RowsAction extends CoreRows
             $this->snapshotReady = true;
         } catch (\Throwable $e) {
             $this->snapshotReady = false;
-            $this->logger?->error(
+            $this->logger->error(
                 '[SimpleMage] Snapshot refresh failed during partial category reindex — falling back to core path',
                 ['exception' => $e, 'category_ids_count' => count($this->limitationByCategories ?? [])],
             );
